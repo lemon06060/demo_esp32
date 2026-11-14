@@ -1,0 +1,5 @@
+{
+    "server_port": 8888,
+    "cloud_url": "http://127.0.0.1:5000/api/data",
+    "log_level": "INFO"
+}

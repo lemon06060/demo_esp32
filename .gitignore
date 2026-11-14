@@ -1,0 +1,18 @@
+#Make 构建目录
+build/
+
+# CMake 源码内构建产生的缓存和临时文件
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CTestTestfile.cmake
+compile_commands.json
+
+# 编译产物
+*.o
+*.a
+*.so
+
+# Python 缓存
+__pycache__/
+*.py[cod]

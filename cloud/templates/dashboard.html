@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>IoT 数据监控面板</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        h1 { color: #333; }
+        .card { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .chart { width: 100%; height: 300px; }
+        .info { display: flex; gap: 30px; font-size: 16px; flex-wrap: wrap; }
+        .info span { color: #666; }
+        .info b { color: #333; font-size: 20px; }
+        #status { color: #999; font-size: 12px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h1>🌡️ IoT 数据监控面板</h1>
+
+    <div class="card">
+        <div class="info">
+            <div>设备: <b id="device">--</b></div>
+            <div>最新温度: <b id="latest-temp">--</b> ℃</div>
+            <div>最新湿度: <b id="latest-humi">--</b> %</div>
+            <div>更新时间: <span id="update-time">--</span></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>🌡️ 温度趋势</h3>
+        <div id="temp-chart" class="chart"></div>
+    </div>
+
+    <div class="card">
+        <h3>💧 湿度趋势</h3>
+        <div id="humi-chart" class="chart"></div>
+    </div>
+
+    <div id="status">正在加载...</div>
+
+    <script>
+        var tempChart = echarts.init(document.getElementById('temp-chart'));
+        var humiChart = echarts.init(document.getElementById('humi-chart'));
+
+        function loadData() {
+            fetch('/api/data')
+                .then(r => r.json())
+                .then(data => {
+                    if (!data || data.length === 0) {
+                        document.getElementById('status').innerText = '暂无数据';
+                        return;
+                    }
+
+                    // 取最近 50 条
+                    var recent = data.slice(-50);
+                    var times = recent.map(d => d.received_at ? d.received_at.substring(11) : '');
+                    var temps = recent.map(d => d.temperature || 0);
+                    var humis = recent.map(d => d.humidity || 0);
+
+                    var latest = recent[recent.length - 1];
+                    document.getElementById('device').innerText = latest.device_id || '--';
+                    document.getElementById('latest-temp').innerText = latest.temperature || '--';
+                    document.getElementById('latest-humi').innerText = latest.humidity || '--';
+                    document.getElementById('update-time').innerText = latest.received_at || '--';
+
+                    tempChart.setOption({
+                        tooltip: { trigger: 'axis' },
+                        xAxis: { type: 'category', data: times },
+                        yAxis: { type: 'value', name: '℃' },
+                        series: [{
+                            data: temps,
+                            type: 'line',
+                            smooth: true,
+                            itemStyle: { color: '#e74c3c' },
+                            areaStyle: { color: 'rgba(231,76,60,0.2)' }
+                        }]
+                    });
+
+                    humiChart.setOption({
+                        tooltip: { trigger: 'axis' },
+                        xAxis: { type: 'category', data: times },
+                        yAxis: { type: 'value', name: '%' },
+                        series: [{
+                            data: humis,
+                            type: 'line',
+                            smooth: true,
+                            itemStyle: { color: '#3498db' },
+                            areaStyle: { color: 'rgba(52,152,219,0.2)' }
+                        }]
+                    });
+
+                    document.getElementById('status').innerText = 
+                        '共 ' + data.length + ' 条数据，显示最近 ' + recent.length + ' 条';
+                })
+                .catch(e => {
+                    document.getElementById('status').innerText = '加载失败: ' + e;
+                });
+        }
+
+        loadData();
+        setInterval(loadData, 5000);  // 每 5 秒刷新
+    </script>
+</body>
+</html>
